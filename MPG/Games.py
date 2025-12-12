@@ -1,5 +1,5 @@
 """
-simulation.py
+MPG.py
 
 Refactored, single-file implementation with modular classes for:
 - Config: Simulation parameters
@@ -1059,3 +1059,4 @@ if __name__=='__main__':
     log = Logger(cfg.results_dir, enabled=cfg.enable_logging)
     runner = SimulationRunner(cfg, log)
     runner.run()
+
