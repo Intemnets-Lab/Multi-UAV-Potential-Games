@@ -10,7 +10,7 @@ log(){ printf '[%(%F %T)T] %s\n' -1 "$*"; }
 # DISCORD WEBHOOK + MESSAGE FORMATTERS
 # ============================================================================
 
-WEBHOOK_URL="https://discord.com/api/webhooks/1447358287975682161/B59bD9vMmlPM5N7_6pZE-xfvtfK_91F86KOl5tK5LEjANbYs_MF8WAneDb9EDHzn5oJO"
+WEBHOOK_URL="_MF8WAneDb9EDHzn5oJO"
 
 # --- Basic text message ---
 send_discord() {
@@ -111,7 +111,7 @@ send_success "All Python packages verified."
 # ============================================================================
 # UAV LIST
 # ============================================================================
-UAVS=(10 9 8 7 6 5 4 3)
+UAVS=(3 4 5 6 7 8 9 10)
 
 log "==================================================="
 log "                 UAV list = ${UAVS[*]}"
@@ -149,24 +149,24 @@ for u in "${UAVS[@]}"; do
     SUMMARY="**UAV Count: $u**\n"
 
     # --- Overlap.py ---
-    log "▶️ Running Overlap.py"
-    send_info "Running **Overlap.py** for $u UAVs…"
+    log "▶️ Running MPG.py"
+    send_info "Running **Games.py** for $u UAVs…"
 
     if "$PY" "$MAIN" --num_uavs "$u" 2>&1 | tee "$LOG_FILE"; then
-        SUMMARY+="✔️ Overlap.py completed\n"
+        SUMMARY+="✔️ Games.py completed\n"
     else
-        send_error "Overlap.py crashed for **$u UAVs**"
+        send_error "Games.py crashed for **$u UAVs**"
         exit 1
     fi
 
     # --- IRADA ---
-    log "▶️ Running Comparison6.py"
-    send_info "Running **Comparison6.py** for $u UAVs…"
+    log "▶️ Running IRADA.py"
+    send_info "Running **IRADA.py** for $u UAVs…"
 
     if "$PY" "$IRADA" --num_uavs "$u" 2>&1 | tee -a "$LOG_FILE"; then
-        SUMMARY+="✔️ Comparison6.py completed\n"
+        SUMMARY+="✔️ IRADA.py completed\n"
     else
-        send_error "Comparison6.py crashed for **$u UAVs**"
+        send_error "IRADA.py crashed for **$u UAVs**"
         exit 1
     fi
 
