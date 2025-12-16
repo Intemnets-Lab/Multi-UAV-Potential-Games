@@ -58,7 +58,7 @@ pyyaml>=5.4.0
 openpyxl>=3.0.0
 imageio>=2.9.0
 ```
-```
+
 
 ***
 
@@ -101,18 +101,26 @@ pip install numpy pandas matplotlib pyyaml openpyxl imageio
 Open `settings.yaml` and verify/modify the basic parameters:
 
 ```yaml
+
+# Simulation
+simulation:
+  n_runs: 100           # Number of simulation runs
+  seed: 42              # Random seed (null for random)
+  enable_logging: true  # Enable detailed logs
+
 # Grid configuration
 grid:
   width: 5              # Grid width (number of columns)
   height: 5             # Grid height (number of rows)
   spacing: 1000         # Spacing between waypoints (meters)
-  zeroprob: 0.3         # Probability of zero-revenue waypoints
+  zero_prob: 0.3         # Probability of zero-revenue waypoints
+  lambda: 0.1           # For IRADA only
 
 # UAV configuration
 uav:
-  numuavs: 2            # Number of UAVs
+  num_uavs: 2           # Number of UAVs
   speed: 20             # UAV speed (m/s)
-  maxflighttime: 1800   # Max flight time (seconds, e.g., 30 min)
+  max_flight_time: 1800 # Max flight time (seconds, e.g., 30 min)
 
 # Revenue configuration
 revenue:
@@ -121,29 +129,25 @@ revenue:
   min: 10               # Min random revenue
   max: 100              # Max random revenue
 
-# Simulation
-simulation:
-  nruns: 5              # Number of simulation runs
-  seed: 42              # Random seed (null for random)
-  enablelogging: true   # Enable detailed logs
+
 
 # Algorithms to run (true/false)
 algorithms:
-  ModeGGSequential: true
-  ModeGRSequential: true
-  ModeRGSequential: false
-  ModeRRSequential: false
-  ModeGGRandom: false
-  ModeGRRandom: false
-  ModeRGRandom: false
-  ModeRRRandom: false
+  sequentialGG: true
+  sequentialGR: true
+  sequentialRG: true
+  sequentialRR: true
+  randomGG:     true
+  randomGR:     true
+  randomRG:     true
+  randomRR:     true
 ```
 
 **Key Parameters for First Run:**
-- **`numuavs: 2`** - Start small to verify the setup works
+- **`num_uavs: 2`** - Start small to verify the setup works
 - **`grid.width: 5`, `grid.height: 5`** - Generates a 5×5 grid (24 waypoints + 1 depot)
-- **`nruns: 5`** - Run 5 simulations for statistical analysis
-- **`algorithms`** - Enable only `ModeGGSequential` and `ModeGRSequential` for faster testing
+- **`n_runs: 5`** - Run 5 simulations for statistical analysis
+- **`algorithms`** - Enable only `sequentialGG` and `randomRG` for faster testing (sample)
 
 ***
 
@@ -152,7 +156,7 @@ algorithms:
 #### **Option A: Run Non-Overlap & Overlap Games**
 
 ```bash
-python Overlap.py
+python Games.py
 ```
 
 **What Happens:**
@@ -218,7 +222,7 @@ python Analysis.py
 
 **Expected Output:**
 ```
-INFO: Using maxrounds=50
+INFO: Using max_rounds=50
 RUN: Generating NonOverlap graphs
 Saved plot: Visualizations/NonOverlap/plots/.../UAV0_meanstd.png
 ...
@@ -249,26 +253,26 @@ Visualizations/
 ├── NonOverlap/plots/2025-12-16/simulation1/
 │   ├── analysis_plots/
 │   │   ├── UAVs2GRID5ModeGGSequential/
-│   │   │   ├── UAV0_meanstd.png
-│   │   │   ├── UAV1_meanstd.png
-│   │   │   ├── Total_meanstd.png
+│   │   │   ├── UAV0_mean_std.png
+│   │   │   ├── UAV1_mean_std.png
+│   │   │   ├── Total_mean_std.png
 │   │   │   └── Consolidated_mean.png          ← Per-algorithm consolidated
 │   │   └── UAVs2GRID5ModeGRSequential/
 │   │       └── (same structure)
 │   ├── combined_total_revenue_rate.png         ← Cross-algorithm comparison
 │   └── boxplots_uav_contribution/
-│       ├── uav_contribution_ModeGGSequential.png
-│       └── uav_contribution_ModeGRSequential.png
+│       ├── uav_contribution_ModeGG_Sequential.png
+│       └── uav_contribution_ModeGR_Sequential.png
 │
 ├── Overlap/plots/2025-12-16/simulation1/
 │   ├── analysis_plots/
-│   │   ├── UAVs2GRID5ModeGGSequential/
+│   │   ├── UAVs2_GRID5_ModeGG_Sequential/
 │   │   │   └── Consolidated_mean.png
 │   │   └── (other algorithms)
 │   ├── combined_total_revenue_rate.png
 │   └── boxplots_uav_contribution/
-│       ├── uav_contribution_ModeGGSequential.png
-│       └── uav_contribution_ModeRGRandom.png
+│       ├── uav_contribution_ModeGG_Sequential.png
+│       └── uav_contribution_ModeRG_Random.png
 │
 ├── IRADA/plots/2025-12-16/simulation1/
 │   ├── analysis_plots/
@@ -279,26 +283,26 @@ Visualizations/
 │       └── uav_contribution_IRADA.png
 │
 └── Comparisons/2025-12-16/simulation1/
-    ├── finaltotal_nonoverlapvsirada.png
-    ├── finaltotal_overlaponly.png
-    └── flighttimeleft_allalgorithms.png
+    ├── final_total_nonoverlap_vs_irada.png
+    ├── final_total_overlap_only.png
+    └── flight_time_left_all_algorithms.png
 ```
 
 ***
 
 ### **Step 6: Inspect Key Outputs**
 
-#### **Revenue Workbook** (`UAVs2GRID5ModeGGSequential.xlsx`)
+#### **Revenue Workbook** (`UAVs2_GRID5_ModeGG_Sequential.xlsx`)
 - **Sheets**: `SimRun1`, `SimRun2`, ..., `SimRun5`
 - **Columns**: `negotiationround`, `UAV0`, `UAV1`, ...
 - **Values**: Revenue rate per UAV per negotiation round
 
 #### **Sequences Workbook** (`*_sequences.xlsx`)
-- **Columns**: `negotiationround`, `UAV0`, `m0`, `UAV1`, `m1`, ...
+- **Columns**: `negotiation_round`, `UAV0`, `m0`, `UAV1`, `m1`, ...
 - **`UAVk`**: Waypoint sequence (e.g., "3-7-12")
 - **`mk`**: Travel time/cost (mⱼ) for that sequence
 
-#### **Waypoints Workbook** (`UAVs2GRID5waypoints.xlsx`)
+#### **Waypoints Workbook** (`UAVs2_GRID5_waypoints.xlsx`)
 - **Columns**: `Waypoint`, `Revenue`, `X`, `Y`
 - **Rows**: One per waypoint (grid positions and revenues)
 
@@ -324,18 +328,18 @@ pip install pyyaml openpyxl
 **Fix:** Increase `maxflighttime` or decrease `grid.width/height` in `settings.yaml`:
 ```yaml
 uav:
-  maxflighttime: 3600  # Increase to 60 minutes
+  max_flight_time: 3600  # Increase to 60 minutes
 ```
 
 #### **Issue 4: IRADA Can't Find Waypoints**
 **Symptom:** `FileNotFoundError: Expected NonOverlap waypoint folder does NOT exist`
-**Fix:** Run `Overlap.py` first to generate Non-Overlap waypoint files, then run `IRADA.py`.
+**Fix:** Run `Games.py` first to generate Non-Overlap waypoint files, then run `IRADA.py`.
 
 #### **Issue 5: No Plots Generated**
-**Fix:** Check `settings.yaml`:
-```yaml
-project:
-  enablevisuals: true  # Must be true for Analysis.py
+**Fix:** Check `Analysis.py`:
+```python
+  GraphGeneration: bool = True  # Must be true for Analysis.py
+  GifGeneration: bool = False   # To visualize the tours 
 ```
 
 ***
@@ -347,20 +351,20 @@ For a minimal test to verify everything works:
 ```yaml
 # In settings.yaml, set:
 uav:
-  numuavs: 2
+  num_uavs: 2
 grid:
   width: 3
   height: 3
 simulation:
-  nruns: 2
+  n_runs: 2
 algorithms:
-  ModeGGSequential: true
+  sequentialGG: true
   # Set all others to false
 ```
 
 Then run:
 ```bash
-python Overlap.py && python Analysis.py
+python Games.py && python Analysis.py
 ```
 
 You should see:
@@ -373,10 +377,10 @@ You should see:
 ### **Next Steps**
 
 After verifying the basic setup:
-1. **Scale Up**: Increase `numuavs` to 3-5, `grid.width/height` to 5-10
+1. **Scale Up**: Increase `num_uavs` to 3-5, `grid.width/height` to 5-10
 2. **Enable More Algorithms**: Turn on Random strategies in `settings.yaml`
 3. **Run Batch Simulations**: Use `Simulate.sh` (see next section)
-4. **Explore Parameter Sensitivity**: Vary `speed`, `maxflighttime`, `zeroprob`
+4. **Explore Parameter Sensitivity**: Vary `speed`, `max_flight_time`, `zero_prob`
 
 ***
 
@@ -393,9 +397,9 @@ For running multiple parameter sweeps:
 
 for uavs in 2 3 5; do
   for grid in 5 10 15; do
-    python Overlap.py --numuavs $uavs --gridwidth $grid --gridheight $grid --nruns 10
-    python IRADA.py --numuavs $uavs --gridwidth $grid --gridheight $grid --nruns 10
-    python Analysis.py --numuavs $uavs --gridwidth $grid --gridheight $grid
+    python Games.py --num_uavs $uavs --grid_width $grid --grid_height $grid --n_runs 10
+    python IRADA.py --num_uavs $uavs --grid_width $grid --grid_height $grid --n_runs 10
+    python Analysis.py --num_uavs $uavs --grid_width $grid --grid_height $grid
   done
 done
 ```
@@ -477,7 +481,7 @@ Each algorithm is identified by three components:
 ## **Project Structure**
 
 ```
-├── Overlap.py          # Main simulation (Non-Overlap & Overlap games)
+├── Games.py            # Main simulation (Non-Overlap & Overlap games)
 ├── IRADA.py            # IRADA benchmark allocator
 ├── Analysis.py         # Post-processing and visualization
 ├── settings.yaml       # Configuration file
@@ -497,19 +501,14 @@ Each algorithm is identified by three components:
 ## 📂 Code Structure
 
 ```
-├─ MPG_algorithms.py   # Simulation runner with algorithms, Excel, log files
-├─ IRADA_algorithm.py   # IRADA with algorithms, Excel, log files
+├─ Games.py   # Simulation runner with algorithms, Excel, log files
+├─ IRADA.py   # IRADA with algorithms, Excel, log files
 ├─ Analysis.py        # Post‑processing: plots, boxplots, animations from Excel
-├─ output5x5_benchmark/
-│   ├─ revenue/...
-│   ├─ sequences/...
-│   ├─ waypoints/...
-│   ├─ gifs/, plots/, excels/
-└─ README.md          # (this file)
+├─ Results/
 ```
 
 ---
-## **File 1: Overlap.py**
+## **File 1: Games.py**
 
 ### **Purpose**
 Runs the Non-Overlapping and Overlapping game simulations with negotiation-based task allocation.
@@ -681,7 +680,7 @@ class SimulationRunner:
 
 ***
 
-## **File 2: IRADA.py (Comparison6.py)**
+## **File 2: IRADA.py**
 
 ### **Purpose**
 Implements the **IRADA** (Iterative Resource Allocation with Dynamic Adjustment) benchmark allocator using chronological event-driven scheduling.
@@ -752,7 +751,7 @@ Let me complete the **Analysis.py** section of the README with detailed function
 
 ***
 
-## **File 3: Analysis.py (Analysis-2.py)**
+## **File 3: Analysis.py**
 
 ### **Purpose**
 Post-processes simulation outputs to generate visualizations, statistical analyses, and comparative plots across all three game modes (Non-Overlap, Overlap, IRADA).
@@ -1048,7 +1047,7 @@ Results/
 Benchmarking/IRADA/
   revenue/YYYY-MM-DD/simulation_X/
   sequences/YYYY-MM-DD/simulation_X/
-run_logs/
+sim_logs/
   run_1_prep.txt
   run_1_main.txt
   run_1_analysis.txt
@@ -1057,7 +1056,7 @@ run_logs/
 * **Revenue Excel** → per-algo totals (per round).
 * **Sequences Excel** → UAV tours.
 * **Waypoints Excel** → grid coords & revenues.
-* **Plots** → consolidated revenue, IRADA boxplots, UAV contribution, flight-time left.
+* **Plots** → consolidated revenue, IRADA boxplots, per UAV contribution to total revenue rate, flight-time left.
 
 ---
 
@@ -1135,7 +1134,7 @@ A: Not built-in. Export waypoint coordinates from `waypoints.xlsx` and plot usin
 
 ***
 
-### **9. Add "License" (if open-source)**
+### **9. MIT License (open-source)**
 
 ```markdown
 
@@ -1175,20 +1174,5 @@ simulation:
 4. **Euclidean Distance**: Assumes flat terrain (no elevation or no-fly zones)
 5. **Clone Threshold**: Fixed per simulation (future: adaptive cloning based on demand)
 ```
-
-***
-
-### **8. Add "FAQ" Section**
-
-```markdown
----
-## **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**Note**: If using for commercial purposes, please contact the author for permission.
-```
-
-***
 
 
