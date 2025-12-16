@@ -1,7 +1,38 @@
-# Multi-UAV-Potential-Games
-A repository on autonomous systems and multi-agent coordination, applying potential game theory to wildfire monitoring. 
+# Multi-UAV Potential Game Framework
 
-IN-PROGRESS
+> **A game-theoretic approach to decentralized multi-UAV persistent monitoring with convergence guarantees**
+
+This repository implements the algorithms and simulation framework described in the thesis:
+**"Path Optimization for UAV Waypoint Navigation Using Potential Game Theory"**
+(Loyola Marymount University, 2025)
+
+### 🎯 What does it do?
+
+Coordinates **3–10 UAVs** to monitor a grid of waypoints (e.g., wildfire perimeters) by:
+- Modeling coordination as an **exact potential game** with guaranteed Nash equilibrium convergence
+- Linking revisit frequency to **Nyquist sampling requirements** for temporal coverage guarantees  
+- Supporting **controlled overlap** at high-priority locations for redundancy
+- Benchmarking against **IRADA** (state-of-the-art distributed allocation)
+
+### 🚀 Why use this framework?
+
+Unlike heuristic or centralized approaches, this provides:
+- ✅ **Convergence guarantees** via potential game theory
+- ✅ **Decentralized negotiation** (no single point of failure)
+- ✅ **Tunable redundancy** (overlap mode for safety-critical regions)
+- ✅ **Reproducible benchmarking** (open-source outputs, configs, plots)
+
+---
+
+## 📦 Quick Start (2 minutes)
+
+### Prerequisites
+- Python 3.10+
+- Virtual environment (recommended)
+
+### Installation & First Run
+
+
 
 # Benchmarking of Multi‑UAV Flight sequence Calculation
 
