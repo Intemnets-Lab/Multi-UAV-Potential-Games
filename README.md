@@ -240,17 +240,15 @@ Saved NonOverlap-vs-IRADA final-total boxplot
 ***
 
 ### **Step 5: Verify Outputs**
-
-Check the following directories:
 ```
 Results/
 ├── NonOverlap/
-│   ├── revenue/2025-12-16/simulation1/
+│   ├── revenue/2025-12-16/simulation_1/
 │   │   ├── UAVs2_GRID5_ModeGG_Sequential.xlsx
 │   │   └── UAVs2_GRID5_ModeGR_Sequential.xlsx
-│   ├── sequences/2025-12-16/simulation1/
+│   ├── sequences/2025-12-16/simulation_1/
 │   │   └── UAVs2_GRID5_1800_20_ModeGG_Sequential_sequences.xlsx
-│   └── waypoints/2025-12-16/simulation1/
+│   └── waypoints/2025-12-16/simulation_1/
 │       └── UAVs2_GRID5_waypoints.xlsx
 ├── Overlap/
 │   └── (same structure)
@@ -258,42 +256,49 @@ Results/
     └── (same structure)
 
 Visualizations/
-├── NonOverlap/plots/2025-12-16/simulation1/
+├── NonOverlap/plots/2025-12-07/simulation_1/
 │   ├── analysis_plots/
-│   │   ├── UAVs2GRID5ModeGGSequential/
+│   │   ├── UAVs9_GRID13_ModeRR_Sequential/
 │   │   │   ├── UAV0_mean_std.png
 │   │   │   ├── UAV1_mean_std.png
 │   │   │   ├── Total_mean_std.png
 │   │   │   └── Consolidated_mean.png          ← Per-algorithm consolidated
-│   │   └── UAVs2GRID5ModeGRSequential/
+│   │   └── UAVs9_GRID13_ModeGG_Sequential/
 │   │       └── (same structure)
 │   ├── combined_total_revenue_rate.png         ← Cross-algorithm comparison
 │   └── boxplots_uav_contribution/
 │       ├── uav_contribution_ModeGG_Sequential.png
-│       └── uav_contribution_ModeGR_Sequential.png
+│       └── uav_contribution_ModeRR_Sequential.png
 │
-├── Overlap/plots/2025-12-16/simulation1/
+├── Overlap/plots/2025-12-07/simulation_1/
 │   ├── analysis_plots/
-│   │   ├── UAVs2_GRID5_ModeGG_Sequential/
+│   │   ├── UAVs9_GRID13_ModeRG_Sequential/
+│   │   │   ├── UAV0_mean_std.png
+│   │   │   ├── UAV1_mean_std.png
+│   │   │   ├── Total_mean_std.png              ← Note: Total_mean_std.png (with underscores)
 │   │   │   └── Consolidated_mean.png
 │   │   └── (other algorithms)
 │   ├── combined_total_revenue_rate.png
 │   └── boxplots_uav_contribution/
-│       ├── uav_contribution_ModeGG_Sequential.png
-│       └── uav_contribution_ModeRG_Random.png
+│       ├── uav_contribution_ModeRG_Sequential.png
+│       └── uav_contribution_ModeGR_Random.png
 │
-├── IRADA/plots/2025-12-16/simulation1/
+├── IRADA/plots/2025-12-07/simulation_1/
 │   ├── analysis_plots/
 │   │   └── IRADA/
+│   │       ├── UAV0_mean_std.png
+│   │       ├── UAV1_mean_std.png
+│   │       ├── Total_mean_std.png
 │   │       └── Consolidated_mean.png
 │   ├── combined_total_revenue_rate.png
 │   └── boxplots_uav_contribution/
 │       └── uav_contribution_IRADA.png
 │
-└── Comparisons/2025-12-16/simulation1/
+└── Comparisons/2025-12-07/simulation_1/
     ├── final_total_nonoverlap_vs_irada.png
     ├── final_total_overlap_only.png
     └── flight_time_left_all_algorithms.png
+
 ```
 
 ***
@@ -302,7 +307,7 @@ Visualizations/
 
 #### **Revenue Workbook** (`UAVs2_GRID5_ModeGG_Sequential.xlsx`)
 - **Sheets**: `SimRun1`, `SimRun2`, ..., `SimRun5`
-- **Columns**: `negotiationround`, `UAV0`, `UAV1`, ...
+- **Columns**: `negotiation_round`, `UAV0`, `UAV1`, ...
 - **Values**: Revenue rate per UAV per negotiation round
 
 #### **Sequences Workbook** (`*_sequences.xlsx`)
@@ -332,7 +337,7 @@ pip install pyyaml openpyxl
 ```
 
 #### **Issue 3: Preflight Check Fails**
-**Symptom:** `ERROR: Preflight failed (tour exceeds maxflighttime)`
+**Symptom:** `ERROR: Preflight failed (tour exceeds max_flight_time)`
 **Fix:** Increase `maxflighttime` or decrease `grid.width/height` in `settings.yaml`:
 ```yaml
 uav:
@@ -379,6 +384,7 @@ You should see:
 - 2 runs completed in ~10-20 seconds
 - Excel files in `Results/`
 - Plots in `Visualizations/`
+- However, 100 runs with real-world parameters (from the configuration table below) completed in ~12 hours for 3 UAVs
 
 ***
 
