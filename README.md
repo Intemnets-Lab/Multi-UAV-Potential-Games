@@ -24,6 +24,7 @@ Unlike heuristic or centralized approaches, this provides:
 
 ---
 
+---
 ## 📦 Quick Start (2 minutes)
 
 ### Prerequisites
@@ -43,6 +44,21 @@ Before running the simulation framework, ensure you have the following installed
 **Recommended Tools:**
 - **VS Code** or **PyCharm** (for code editing)
 - **Terminal/Command Prompt** (for running scripts)
+
+***
+
+### Requirements
+
+Create a `requirements.txt` file with:
+```
+numpy>=1.21.0
+pandas>=1.3.0
+matplotlib>=3.4.0
+pyyaml>=5.4.0
+openpyxl>=3.0.0
+imageio>=2.9.0
+```
+```
 
 ***
 
@@ -367,7 +383,32 @@ After verifying the basic setup:
 This section gives a complete walkthrough from installation to first successful run, with troubleshooting for common issues.
 
 
+### Batch Execution with `simulate.sh`
 
+For running multiple parameter sweeps:
+
+```
+#!/bin/bash
+# Example: Test different UAV counts and grid sizes
+
+for uavs in 2 3 5; do
+  for grid in 5 10 15; do
+    python Overlap.py --numuavs $uavs --gridwidth $grid --gridheight $grid --nruns 10
+    python IRADA.py --numuavs $uavs --gridwidth $grid --gridheight $grid --nruns 10
+    python Analysis.py --numuavs $uavs --gridwidth $grid --gridheight $grid
+  done
+done
+```
+
+**Usage:**
+```
+chmod +x Simulate.sh
+./Simulate.sh
+```
+```
+
+***
+---
 ## 2. Configuration (`Settings.yaml`)
 
 All parameters load from `settings.yaml` (or can be overridden via CLI flags in `Simulate.sh`):
@@ -406,6 +447,33 @@ Overrides can be passed via CLI:
 
 ***
 
+
+### Algorithm Naming Convention
+
+Each algorithm is identified by three components:
+
+| **Component** | **Options** | **Meaning** |
+|--------------|------------|-------------|
+| **Mode** | GG, GR, RG, RR | Drop-Pick strategy |
+| | GG = Greedy Drop, Greedy Pick | UAVs drop lowest-revenue waypoint, pick highest-revenue waypoint |
+| | GR = Greedy Drop, Random Pick | UAVs drop lowest-revenue waypoint, pick random waypoint |
+| | RG = Random Drop, Greedy Pick | UAVs drop random waypoint, pick highest-revenue waypoint |
+| | RR = Random Drop, Random Pick | UAVs drop random waypoint, pick random waypoint |
+| **Order** | Sequential, Random | Agent turn order |
+| | Sequential | UAVs negotiate in fixed order (UAV0 → UAV1 → ...) |
+| | Random | UAVs negotiate in shuffled order each round |
+| **Game** | NonOverlap, Overlap | Waypoint ownership model |
+| | NonOverlap | Each waypoint assigned to exactly one UAV |
+| | Overlap | High-value waypoints can be "cloned" for multiple UAVs |
+
+**Short Labels (used in plots):**
+- `NSGG` = NonOverlap, Sequential, Greedy-Greedy
+- `ORGR` = Overlap, Random, Greedy-Random
+- `IRADA` = IRADA benchmark (chronological event-driven)
+```
+
+***
+---
 ## **Project Structure**
 
 ```
@@ -426,6 +494,21 @@ Overrides can be passed via CLI:
 
 ***
 
+## 📂 Code Structure
+
+```
+├─ MPG_algorithms.py   # Simulation runner with algorithms, Excel, log files
+├─ IRADA_algorithm.py   # IRADA with algorithms, Excel, log files
+├─ Analysis.py        # Post‑processing: plots, boxplots, animations from Excel
+├─ output5x5_benchmark/
+│   ├─ revenue/...
+│   ├─ sequences/...
+│   ├─ waypoints/...
+│   ├─ gifs/, plots/, excels/
+└─ README.md          # (this file)
+```
+
+---
 ## **File 1: Overlap.py**
 
 ### **Purpose**
@@ -948,23 +1031,11 @@ python Analysis.py
 
 This completes the comprehensive function documentation for all three core files.
 
+This is an **excellent and comprehensive README**! You've covered all the critical components. Here are a few minor suggestions to make it even more complete:
 
-# Benchmarking of Multi‑UAV Flight sequence Calculation
+***
 
-## 📂 Code Structure
-
-```
-├─ MPG_algorithms.py   # Simulation runner with algorithms, Excel, log files
-├─ IRADA_algorithm.py   # IRADA with algorithms, Excel, log files
-├─ Analysis.py        # Post‑processing: plots, boxplots, animations from Excel
-├─ output5x5_benchmark/
-│   ├─ revenue/...
-│   ├─ sequences/...
-│   ├─ waypoints/...
-│   ├─ gifs/, plots/, excels/
-└─ README.md          # (this file)
-```
-
+---
 ## 📂 Outputs
 
 After each run:
@@ -990,7 +1061,7 @@ run_logs/
 
 ---
 
-# 📈 Interpreting Results
+## 📈 Interpreting Results
 
 * **Revenue plots**: compare convergence of total revenue across algorithms.
 * **Boxplots**: distribution of results across runs (total revenue, UAV contributions, flight-time left).
@@ -999,7 +1070,8 @@ run_logs/
 
 ---
 
-# 🔧 Extending the Framework
+---
+## 🔧 Extending the Framework
 
 * Add new allocators (e.g., CNP, CBBA, TS-DTA) by subclassing `TaskAllocator`.
 * Toggle them in `Config` via `sequential_X`, `random_X`.
@@ -1008,8 +1080,6 @@ run_logs/
 ---
 
 
-## 🔧 Extending the Framework
-
 * **Add new allocators**: subclass `TaskAllocator`, implement `allocate(pool)` → `(rates, history)`.
 * **Toggle in Config**: add `sequential_NewAlgo`, `random_NewAlgo`, include in `strategies` dict.
 * **Analysis**: new Excel files are auto‑picked up by `Analysis.py` functions.
@@ -1017,5 +1087,108 @@ run_logs/
 ---
 
 *Work in progress—future improvements:* advanced multi‑objective metrics, dynamic deadlines, real‑world maps.
+
+
+### Performance Tuning Tips
+
+#### **For Large Grids (>10×10):**
+- Increase `max_flight_time` to avoid preflight failures
+- Enable only 2-3 algorithms initially (disable Random modes)
+- Reduce `n_runs` to 5 for faster iteration
+
+#### **For Many UAVs (>5):**
+- Expect longer negotiation times (10-50 rounds)
+- Use `enablelogging: false` to speed up execution
+- Monitor `rollback_stasis` in logs (indicates cycles)
+
+#### **For Statistical Significance:**
+- Use `n_runs ≥ 30` for publication-ready results
+- Set fixed `seed` for reproducibility across experiments
+- Run IRADA with same `maxrounds` as longest MPG convergence
+
+#### **Memory Optimization:**
+- Disable GIF generation for large experiments
+- Use `Analysis.py` with manual date/sim selection to avoid scanning all folders
+```
+
+***
+---
+## **Frequently Asked Questions (FAQ)**
+
+**Q1: Why does Overlap sometimes perform worse than NonOverlap?**  
+A: Clones add waypoints but don't increase total revenue. If `clone_threshold` is too low, UAVs waste time revisiting the same high-value locations instead of covering more area.
+
+**Q2: Can I run only IRADA without MPG?**  
+A: No. IRADA requires a NonOverlap waypoint file to ensure fair comparison on the same grid. Run `Overlap.py` first, then `IRADA.py`.
+
+**Q3: What's the difference between `sequences.xlsx` and `revenue.xlsx`?**  
+A: 
+- `sequences.xlsx`: Lists which waypoints each UAV visits per round
+- `revenue.xlsx`: Shows the revenue *rate* (revenue/time) achieved per round
+
+**Q4: How do I reproduce thesis results exactly?**  
+A: Use the same `seed`, `grid` parameters, and `n_runs` from the thesis config. Seed ensures identical random revenue/assignment.
+
+**Q5: Can I visualize UAV paths on a map?**  
+A: Not built-in. Export waypoint coordinates from `waypoints.xlsx` and plot using `matplotlib.pyplot.scatter()` or GIS tools.
+```
+
+***
+
+### **9. Add "License" (if open-source)**
+
+```markdown
+
+### Troubleshooting Convergence Issues
+
+#### **Symptom: Negotiation doesn't converge (>100 rounds)**
+**Causes:**
+- Grid too large relative to `max_flight_time`
+- Too many zero-revenue waypoints (`zero_prob` too high)
+- Rollback stasis (cyclic state repetition)
+
+**Fixes:**
+```
+simulation:
+  patience: 10          # Reduce patience for faster termination
+  rollback_limit: 3     # Lower rollback tolerance
+```
+
+#### **Symptom: IRADA outperforms MPG significantly**
+**Possible Reasons:**
+- MPG stuck in local Nash equilibrium
+- Initial assignment biased (try `AngleAssigner` instead of `uniform`)
+- IRADA benefits from continuous optimization vs. discrete negotiation
+
+**Analysis:**
+- Compare `boxplots_uav_contribution` to check workload balance
+- Inspect `negotiationlog.txt` for repeated drop/pick patterns
+```
+
+***
+---
+## **Known Limitations**
+
+1. **2-opt TSP Heuristic**: Not guaranteed to find global optimum (use for speed over exactness)
+2. **Static Revenue Model**: Waypoint values don't decay over time (future work: temporal dynamics)
+3. **Homogeneous UAVs**: All UAVs have identical `speed` and `max_flight_time`
+4. **Euclidean Distance**: Assumes flat terrain (no elevation or no-fly zones)
+5. **Clone Threshold**: Fixed per simulation (future: adaptive cloning based on demand)
+```
+
+***
+
+### **8. Add "FAQ" Section**
+
+```markdown
+---
+## **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Note**: If using for commercial purposes, please contact the author for permission.
+```
+
+***
 
 
