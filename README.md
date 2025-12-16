@@ -65,8 +65,16 @@ imageio>=2.9.0
 ### **Step 1: Clone the Repository**
 
 ```bash
-git clone https://github.com/Intemnets-Lab/Multi-UAV-Potential-Games/tree/main
-cd <repository-directory>
+# Clone the repository
+git clone https://github.com/Intemnets-Lab/Multi-UAV-Potential-Games.git
+
+# Navigate into the created directory
+cd Multi-UAV-Potential-Games
+
+# Verify you're in the right place
+ls
+# You should see files like: Games.py, IRADA.py, Analysis.py, settings.yaml, etc.
+
 ```
 
 ***
@@ -77,13 +85,13 @@ Create a virtual environment (recommended) and install required packages:
 
 ```bash
 # Create virtual environment
-python -m venv venv
+python -m venv PotentialDrones
 
 # Activate virtual environment
 # On Windows:
-venv\Scripts\activate
+PotentialDrones\Scripts\activate
 # On macOS/Linux:
-source venv/bin/activate
+source PotentialDrones/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
