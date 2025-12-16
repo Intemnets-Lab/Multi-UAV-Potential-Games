@@ -37,7 +37,7 @@ Unlike heuristic or centralized approaches, this provides:
 Before running the simulation framework, ensure you have the following installed:
 
 **Required Software:**
-- **Python 3.8+** (tested on 3.8-3.11)
+- **Python 3.10+** (tested on 3.10.18-3.11)
 - **pip** (Python package manager)
 - **Git** (for cloning the repository)
 
