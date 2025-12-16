@@ -30,53 +30,343 @@ Unlike heuristic or centralized approaches, this provides:
 - Python 3.10+
 - Virtual environment (recommended)
 
-### Installation & First Run
-
-
-
-# Benchmarking of Multi‑UAV Flight sequence Calculation
-
-## 📂 Code Structure
-
-```
-├─ MPG_algorithms.py   # Simulation runner with algorithms, Excel, log files
-├─ IRADA_algorithm.py   # IRADA with algorithms, Excel, log files
-├─ Analysis.py        # Post‑processing: plots, boxplots, animations from Excel
-├─ output5x5_benchmark/
-│   ├─ revenue/...
-│   ├─ sequences/...
-│   ├─ waypoints/...
-│   ├─ gifs/, plots/, excels/
-└─ README.md          # (this file)
-```
-
-
-# `MPG_algorithms.py` — Full Reference & Walkthrough
-
-> **Scope:**
-> This script drives a family of multi‐UAV “drop/pick” negotiations on a fixed grid of waypoints, treating the process as an Exact Potential Game over revenue rates. It generates per‐run Excel outputs for revenue and sequences.
-
 ---
+## **Installation & First Run**
 
-## 1. High-Level Architecture
+Before running the simulation framework, ensure you have the following installed:
 
+**Required Software:**
+- **Python 3.8+** (tested on 3.8-3.11)
+- **pip** (Python package manager)
+- **Git** (for cloning the repository)
+
+**Recommended Tools:**
+- **VS Code** or **PyCharm** (for code editing)
+- **Terminal/Command Prompt** (for running scripts)
+
+***
+
+### **Step 1: Clone the Repository**
+
+```bash
+git clone <repository-url>
+cd <repository-directory>
 ```
-MPG_algorithms.py
-├── imports & global helpers
-├── class Config             # all simulation parameters & toggles
-├── class Logger             # thin wrapper over Python’s logging
-├── class WaypointManager    # grid creation & random revenue/deadline draws
-├── class sequenceOptimizer      # static STSPSolver 2-opt routine
-├── class PreflightChecker   # verifies feasibility of initial waypoints
-├── class InitialAssigner    # uniform or custom seeding of initial tours
-├── class TaskAllocator      # base for negotiation & market allocators
-│   └── class NegotiationAllocator  # “ModeXY” drop/pick negotiation
-│   └── (other allocators: CNPAllocator, CBBAAllocator, TSDTAAllocator…)
-├── class SimulationRunner   # orchestrates preflight, experiments, outputs
-└── if __name__ == '__main__' → instantiate + runner.run()
+
+***
+
+### **Step 2: Install Dependencies**
+
+Create a virtual environment (recommended) and install required packages:
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
----
+**Core Dependencies** (if `requirements.txt` is missing):
+```bash
+pip install numpy pandas matplotlib pyyaml openpyxl imageio
+```
+
+***
+
+### **Step 3: Verify `settings.yaml` Configuration**
+
+Open `settings.yaml` and verify/modify the basic parameters:
+
+```yaml
+# Grid configuration
+grid:
+  width: 5              # Grid width (number of columns)
+  height: 5             # Grid height (number of rows)
+  spacing: 1000         # Spacing between waypoints (meters)
+  zeroprob: 0.3         # Probability of zero-revenue waypoints
+
+# UAV configuration
+uav:
+  numuavs: 2            # Number of UAVs
+  speed: 20             # UAV speed (m/s)
+  maxflighttime: 1800   # Max flight time (seconds, e.g., 30 min)
+
+# Revenue configuration
+revenue:
+  random: true          # Use random revenue (true/false)
+  fixedvalue: 50        # Fixed revenue if random=false
+  min: 10               # Min random revenue
+  max: 100              # Max random revenue
+
+# Simulation
+simulation:
+  nruns: 5              # Number of simulation runs
+  seed: 42              # Random seed (null for random)
+  enablelogging: true   # Enable detailed logs
+
+# Algorithms to run (true/false)
+algorithms:
+  ModeGGSequential: true
+  ModeGRSequential: true
+  ModeRGSequential: false
+  ModeRRSequential: false
+  ModeGGRandom: false
+  ModeGRRandom: false
+  ModeRGRandom: false
+  ModeRRRandom: false
+```
+
+**Key Parameters for First Run:**
+- **`numuavs: 2`** - Start small to verify the setup works
+- **`grid.width: 5`, `grid.height: 5`** - Generates a 5×5 grid (24 waypoints + 1 depot)
+- **`nruns: 5`** - Run 5 simulations for statistical analysis
+- **`algorithms`** - Enable only `ModeGGSequential` and `ModeGRSequential` for faster testing
+
+***
+
+### **Step 4: Run Your First Simulation**
+
+#### **Option A: Run Non-Overlap & Overlap Games**
+
+```bash
+python Overlap.py
+```
+
+**What Happens:**
+1. Creates dated folders under `Results/NonOverlap/` and `Results/Overlap/`
+2. Runs all enabled algorithms (from `settings.yaml`)
+3. Generates Excel files for:
+   - **Revenue rates** (`revenue/YYYY-MM-DD/simulationN/*.xlsx`)
+   - **Waypoint sequences** (`sequences/YYYY-MM-DD/simulationN/*_sequences.xlsx`)
+   - **Waypoint grids** (`waypoints/YYYY-MM-DD/simulationN/*.xlsx`)
+4. Outputs negotiation logs (if `enablelogging: true`)
+
+**Expected Output:**
+```
+Simulation Started
+NonOverlap SimRun 1/5
+DEBUG: SimRun 1 Mode NonOverlap Overlap=False
+DEBUG: NonOverlap SimRun 1 Running Preflight
+Running negotiation/output for NonOverlap, SimRun 1, preflight status=True
+Wrote SimRun1 to NonOverlap/ModeGGSequential
+Overlap SimRun 1/5
+...
+Simulation Complete
+```
+
+***
+
+#### **Option B: Run IRADA Benchmark**
+
+```bash
+python IRADA.py
+```
+
+**What Happens:**
+1. Searches for the latest Non-Overlap waypoint file (uses same grid for fair comparison)
+2. Runs IRADA allocator for `nruns` simulations
+3. Outputs to `BenchmarkingIRADA/revenue/` and `BenchmarkingIRADA/sequences/`
+
+**Expected Output:**
+```
+IRADA Run 1/5
+IRADA run took 3.45s
+IRADA Run 2/5
+...
+All IRADA runs done.
+```
+
+***
+
+#### **Option C: Run Analysis & Generate Plots**
+
+After running simulations, generate visualizations:
+
+```bash
+python Analysis.py
+```
+
+**What Happens:**
+1. Automatically finds the latest simulation folders
+2. Generates per-algorithm revenue plots
+3. Creates consolidated comparison plots
+4. Produces boxplots for statistical analysis
+5. Saves outputs to `Visualizations/`
+
+**Expected Output:**
+```
+INFO: Using maxrounds=50
+RUN: Generating NonOverlap graphs
+Saved plot: Visualizations/NonOverlap/plots/.../UAV0_meanstd.png
+...
+Saved NonOverlap-vs-IRADA final-total boxplot
+```
+
+***
+
+### **Step 5: Verify Outputs**
+
+Check the following directories:
+```
+Results/
+├── NonOverlap/
+│   ├── revenue/2025-12-16/simulation1/
+│   │   ├── UAVs2GRID5ModeGGSequential.xlsx
+│   │   └── UAVs2GRID5ModeGRSequential.xlsx
+│   ├── sequences/2025-12-16/simulation1/
+│   │   └── UAVs2GRID5_1800_20_ModeGGSequential_sequences.xlsx
+│   └── waypoints/2025-12-16/simulation1/
+│       └── UAVs2GRID5waypoints.xlsx
+├── Overlap/
+│   └── (same structure)
+└── BenchmarkingIRADA/
+    └── (same structure)
+
+Visualizations/
+├── NonOverlap/plots/2025-12-16/simulation1/
+│   ├── analysis_plots/
+│   │   ├── UAVs2GRID5ModeGGSequential/
+│   │   │   ├── UAV0_meanstd.png
+│   │   │   ├── UAV1_meanstd.png
+│   │   │   ├── Total_meanstd.png
+│   │   │   └── Consolidated_mean.png          ← Per-algorithm consolidated
+│   │   └── UAVs2GRID5ModeGRSequential/
+│   │       └── (same structure)
+│   ├── combined_total_revenue_rate.png         ← Cross-algorithm comparison
+│   └── boxplots_uav_contribution/
+│       ├── uav_contribution_ModeGGSequential.png
+│       └── uav_contribution_ModeGRSequential.png
+│
+├── Overlap/plots/2025-12-16/simulation1/
+│   ├── analysis_plots/
+│   │   ├── UAVs2GRID5ModeGGSequential/
+│   │   │   └── Consolidated_mean.png
+│   │   └── (other algorithms)
+│   ├── combined_total_revenue_rate.png
+│   └── boxplots_uav_contribution/
+│       ├── uav_contribution_ModeGGSequential.png
+│       └── uav_contribution_ModeRGRandom.png
+│
+├── IRADA/plots/2025-12-16/simulation1/
+│   ├── analysis_plots/
+│   │   └── IRADA/
+│   │       └── Consolidated_mean.png
+│   ├── combined_total_revenue_rate.png
+│   └── boxplots_uav_contribution/
+│       └── uav_contribution_IRADA.png
+│
+└── Comparisons/2025-12-16/simulation1/
+    ├── finaltotal_nonoverlapvsirada.png
+    ├── finaltotal_overlaponly.png
+    └── flighttimeleft_allalgorithms.png
+```
+
+***
+
+### **Step 6: Inspect Key Outputs**
+
+#### **Revenue Workbook** (`UAVs2GRID5ModeGGSequential.xlsx`)
+- **Sheets**: `SimRun1`, `SimRun2`, ..., `SimRun5`
+- **Columns**: `negotiationround`, `UAV0`, `UAV1`, ...
+- **Values**: Revenue rate per UAV per negotiation round
+
+#### **Sequences Workbook** (`*_sequences.xlsx`)
+- **Columns**: `negotiationround`, `UAV0`, `m0`, `UAV1`, `m1`, ...
+- **`UAVk`**: Waypoint sequence (e.g., "3-7-12")
+- **`mk`**: Travel time/cost (mⱼ) for that sequence
+
+#### **Waypoints Workbook** (`UAVs2GRID5waypoints.xlsx`)
+- **Columns**: `Waypoint`, `Revenue`, `X`, `Y`
+- **Rows**: One per waypoint (grid positions and revenues)
+
+#### **Plots** (in `Visualizations/`)
+- **`Consolidated_mean.png`**: Shows all UAV revenue trends + system mean
+- **`finaltotal_nonoverlapvsirada.png`**: Boxplot comparing final performance
+
+***
+
+### **Common Issues & Fixes**
+
+#### **Issue 1: `FileNotFoundError: settings.yaml`**
+**Fix:** Ensure `settings.yaml` is in the same directory as the Python scripts.
+
+#### **Issue 2: `ModuleNotFoundError: No module named 'yaml'`**
+**Fix:** Install missing dependencies:
+```bash
+pip install pyyaml openpyxl
+```
+
+#### **Issue 3: Preflight Check Fails**
+**Symptom:** `ERROR: Preflight failed (tour exceeds maxflighttime)`
+**Fix:** Increase `maxflighttime` or decrease `grid.width/height` in `settings.yaml`:
+```yaml
+uav:
+  maxflighttime: 3600  # Increase to 60 minutes
+```
+
+#### **Issue 4: IRADA Can't Find Waypoints**
+**Symptom:** `FileNotFoundError: Expected NonOverlap waypoint folder does NOT exist`
+**Fix:** Run `Overlap.py` first to generate Non-Overlap waypoint files, then run `IRADA.py`.
+
+#### **Issue 5: No Plots Generated**
+**Fix:** Check `settings.yaml`:
+```yaml
+project:
+  enablevisuals: true  # Must be true for Analysis.py
+```
+
+***
+
+### **Quick Test Run (30 seconds)**
+
+For a minimal test to verify everything works:
+
+```yaml
+# In settings.yaml, set:
+uav:
+  numuavs: 2
+grid:
+  width: 3
+  height: 3
+simulation:
+  nruns: 2
+algorithms:
+  ModeGGSequential: true
+  # Set all others to false
+```
+
+Then run:
+```bash
+python Overlap.py && python Analysis.py
+```
+
+You should see:
+- 2 runs completed in ~10-20 seconds
+- Excel files in `Results/`
+- Plots in `Visualizations/`
+
+***
+
+### **Next Steps**
+
+After verifying the basic setup:
+1. **Scale Up**: Increase `numuavs` to 3-5, `grid.width/height` to 5-10
+2. **Enable More Algorithms**: Turn on Random strategies in `settings.yaml`
+3. **Run Batch Simulations**: Use `Simulate.sh` (see next section)
+4. **Explore Parameter Sensitivity**: Vary `speed`, `maxflighttime`, `zeroprob`
+
+***
+
+This section gives a complete walkthrough from installation to first successful run, with troubleshooting for common issues.
+
+
 
 ## 2. Configuration (`Settings.yaml`)
 
@@ -114,499 +404,566 @@ Overrides can be passed via CLI:
 --num_uavs 12 --grid_width 15 --max_flight_time 2000 --sequential_GG true --random_RR false
 ````
 
----
+***
 
-## 3. Core Classes
+## **Project Structure**
 
-### 3.1 WaypointManager
+```
+├── Overlap.py          # Main simulation (Non-Overlap & Overlap games)
+├── IRADA.py            # IRADA benchmark allocator
+├── Analysis.py         # Post-processing and visualization
+├── settings.yaml       # Configuration file
+├── Simulate.sh         # Batch execution script
+├── Results/            # Simulation outputs
+│   ├── NonOverlap/
+│   │   ├── revenue/
+│   │   ├── sequences/
+│   │   └── waypoints/
+│   ├── Overlap/
+│   └── (same structure)
+└── BenchmarkingIRADA/  # IRADA outputs
+```
 
+***
+
+## **File 1: Overlap.py**
+
+### **Purpose**
+Runs the Non-Overlapping and Overlapping game simulations with negotiation-based task allocation.
+
+### **Core Classes & Functions**
+
+#### **1. Config Class**
+```python
+class Config:
+    def __init__(self, data: dict)
+    @classmethod
+    def fromyaml(cls, path='settings.yaml')
+    def override(self, overrides: dict)
+```
+- **`__init__`**: Loads simulation parameters from YAML (grid size, UAV count, speed, max flight time, revenue ranges, algorithm toggles).
+- **`fromyaml`**: Factory method to create Config from `settings.yaml`.
+- **`override`**: Applies CLI overrides (e.g., `--numuavs 5`).
+
+***
+
+#### **2. Logger Class**
+```python
+class Logger:
+    def __init__(self, outputdir, filename='negotiationlog.txt', enabled=True)
+    def info(self, msg)
+    def debug(self, msg)
+```
+- **`__init__`**: Creates a timestamped log file in `outputdir`.
+- **`info/debug`**: Writes messages with timestamps to the log (e.g., negotiation rounds, UAV decisions).
+
+***
+
+#### **3. WaypointManager Class**
 ```python
 class WaypointManager:
-    def __init__(self, config: Config):
-        # 1) builds a cemented grid of (x,y) coords once (class‐static)
-        # 2) draws self.values & self.deadlines per config zero_prob & revenue settings
+    def __init__(self, config, log, presetwaypoints=None, presetvalues=None)
+    def generategrid(self) -> List[Tuple[float, float]]
+    def drawrevenues(self) -> List[int]
+    def applyzeroprob(self)
+    def initclonesthresholdbased(self)
+    def ensureclonesexistandwire(self, sequences)
 ```
+- **`__init__`**: Initializes the waypoint grid (excluding depot at (0,0)) and revenues. If `presetwaypoints/presetvalues` are provided (for Overlap mode), uses them; otherwise generates fresh.
+- **`generategrid`**: Creates a grid of waypoints at `(x*spacing, y*spacing)` for x in [0, W), y in [0, H), excluding depot.
+- **`drawrevenues`**: Randomly assigns revenue values to each waypoint from `[revenuemin, revenuemax]`.
+- **`applyzeroprob`**: Sets revenue to 0 for a fraction of waypoints based on `zeroprob` (simulating low-value areas).
+- **`initclonesthresholdbased`**: (Overlap mode) Creates clone waypoints for high-revenue POIs above `clonethreshold`. Clones have identical coordinates and revenues.
+- **`ensureclonesexistandwire`**: Ensures clones match their originals' revenues (called after revenue redraw).
 
-* **`shared_pool()`** returns all waypoint indices with revenue > 0.
-* **`redraw_values_and_deadlines()`** allows fresh randomization between runs.
+***
 
-### 3.2 sequenceOptimizer
-
+#### **4. PathOptimizer Class**
 ```python
-class sequenceOptimizer:
+class PathOptimizer:
     @staticmethod
-    def STSPSolver(depot, points, speed, max_time):
-        # runs 2-opt (swap) improvements on the TSP tour,
-        # returns the best ordering and the final “cost” (aka mj metric).
+    def euclidean(a, b) -> float
+    def STSPSolver(self, depot, waypoints, speed, maxflighttime) -> (List[int], float)
+    def simulatemj(self, depot, waypoints, speed, maxflighttime) -> (float, float, float, float)
 ```
+- **`euclidean`**: Computes Euclidean distance between two points.
+- **`STSPSolver`**: Uses 2-opt heuristic to optimize the Traveling Salesman Problem (TSP) tour starting/ending at depot. Returns best order and `mⱼ` (time/distance cost).
+- **`simulatemj`**: Simulates multi-loop (MJ) tours: calculates forward leg, return leg, and jump-back distances for a given sequence.
 
-The returned `mj` is defined in the `Paper`
+***
 
-### 3.3 NegotiationAllocator
+#### **5. UAVAgent Class**
+```python
+class UAVAgent:
+    def __init__(self, uid, manager, optimizer, config, logger)
+    def remainingcapacity(self, t: float) -> float
+    def currentPOIs(self) -> List[int]
+    def weightedcenter(self, t: float) -> Tuple[float, float]
+    def setpath(self, path: List[int])
+    def revenuerate(self) -> float
+    def position(self, t: float) -> Tuple[float, float]
+```
+- **`__init__`**: Initializes UAV with ID, waypoint manager, optimizer, config, and logger.
+- **`remainingcapacity`**: Returns remaining flight time budget at time `t`.
+- **`currentPOIs`**: Returns the list of waypoints currently in the UAV's path.
+- **`weightedcenter`**: Computes the revenue-weighted centroid of owned waypoints (used for IRADA's η computation).
+- **`setpath`**: Assigns a new path (waypoint sequence) to the UAV.
+- **`revenuerate`**: Computes average revenue per unit time for the last tour: `totalrevenue / totaltime`.
+- **`position`**: Returns UAV's current coordinates (last waypoint visited or depot).
 
+***
+
+#### **6. InitialAssigner Class**
+```python
+class InitialAssigner:
+    def __init__(self, config)
+    def uniform(self, W) -> List[List[int]]
+```
+- **`__init__`**: Stores config.
+- **`uniform`**: Randomly distributes waypoints `W` (list of POI indices) uniformly among UAVs using round-robin shuffling.
+
+***
+
+#### **7. TaskAllocator (Base Class)**
+```python
+class TaskAllocator:
+    def __init__(self, manager, config, logger, optimizer)
+    def setupagents(self, initialpaths=None) -> List[UAVAgent]
+    def allocate(self, taskpool) -> (List[List[float]], List[List[List[int]]])
+```
+- **`__init__`**: Base class for allocation strategies.
+- **`setupagents`**: Creates UAVAgent instances with initial paths (or uniform assignment).
+- **`allocate`**: **Abstract method** – implemented by subclasses (e.g., NegotiationAllocator).
+
+***
+
+#### **8. NegotiationAllocator (Subclass of TaskAllocator)**
 ```python
 class NegotiationAllocator(TaskAllocator):
-    def allocate(self, initial_sequences):
-        # 1) Drop phase (in order or randomized per config.randomize_sequence)
-        # 2) Pick phase (ditto)
-        # 3) Re-assign any leftovers + 2-opt repairs
-        # 4) Repeat for max_rounds or until convergence
+    def __init__(self, manager, config, logger, dropstrategy, pickstrategy)
+    def allocate(self, initialpaths) -> (List[List[float]], List[List[List[int]]])
 ```
+- **`__init__`**: Defines drop strategy (greedy/random) and pick strategy (greedy/random), plus sequential/random ordering.
+- **`allocate`**: **Core negotiation loop**:
+  1. Each round, UAVs drop waypoints (greedy = lowest revenue, random = random drop).
+  2. UAVs pick waypoints from the shared pool (greedy = highest revenue, random = random pick).
+  3. Computes revenue rates, checks convergence (stagnation patience), and rollback detection.
+  4. Returns `rates` (per-UAV revenue rate per round) and `history` (sequences per round).
 
-* Logs each drop/pick, tracks the “market pool” of freed waypoints.
-* Returns `(rates, history)` where:
+**Key Features:**
+- **Rollback detection**: Detects cycles in state and breaks the loop.
+- **Convergence**: Stops if revenue doesn't improve for `self.patience` rounds.
 
-  * `rates[r]` = total revenue rate after round `r`.
-  * `history[r]` = list of UAV sequences after round `r`.
+***
 
-### 3.4 SimulationRunner
+#### **9. PreflightChecker Class**
+```python
+class PreflightChecker:
+    def __init__(self, manager, config, log)
+    def run(self) -> bool
+```
+- **`__init__`**: Initializes with waypoint manager, config, and logger.
+- **`run`**: Checks if **any** UAV's initial tour exceeds `maxflighttime`. Returns `True` if all tours are feasible, `False` otherwise. (Only runs for Non-Overlap mode.)
 
+***
+
+#### **10. SimulationRunner Class**
 ```python
 class SimulationRunner:
-    def __init__(self, cfg: Config, log: Logger):
-        …
-    def run(self):
-        –– Preflight checker
-        –– Initial waypoint plot
-        – For each run_idx in 1…n_runs:
-             • redraw values & deadlines
-             • assign initial tours via InitialAssigner
-             • apply 2-opt to initial tours
-             • compute & log base revenue rates
-             • determine passes = [(seq/random, [enabled strategy names]), …]
-             • for each pass:
-                 – set cfg.randomize_sequence
-                 – for each enabled strategy name:
-                     • alloc = strategies[name]()
-                     • (rates, history) = alloc.allocate(...)
-                     • collect per‐round revenue/sequence into DataFrames
-        – After all runs:
-             • call _prepare_output_dirs()
-             • dump per‐algorithm/sequence combo to `.xlsx` (revenues & sequences)
+    def __init__(self, cfg, log)
+    def findorcreatesimfolder(self) -> str
+    def run(self)
+    def definestrategies(self) -> Dict
+    def prepareinitialsequences(self) -> List[List[int]]
+    def computemjmatrix(self, history) -> (List[List[float]], List[List[List[int]]])
+    def makeoutputs(self, rates, mjmatrix, history) -> (DataFrame, DataFrame, DataFrame)
+    def writeincremental(self, modekey, stratname, runidx, dfrev, dfseq, dfwp)
 ```
+- **`__init__`**: Sets up manager, assigner, optimizer, and output folders.
+- **`findorcreatesimfolder`**: Finds the next available `simulationN` folder under `Results/{mode}/revenue/YYYY-MM-DD/`.
+- **`run`**: **Main orchestrator**:
+  1. Creates fresh Non-Overlap grid for each run.
+  2. Runs Non-Overlap game (with preflight check).
+  3. Adds clones for Overlap game using the same base grid.
+  4. Executes all enabled strategies (ModeGG/GR/RG/RR × Sequential/Random).
+  5. Writes outputs incrementally.
+- **`definestrategies`**: Returns dictionary of strategy names → factory functions (e.g., `ModeGGSequential` → greedy drop, greedy pick, sequential).
+- **`prepareinitialsequences`**: Filters zero-revenue waypoints and assigns them uniformly to UAVs.
+- **`computemjmatrix`**: For each round's sequences, optimizes tours using 2-opt TSP and computes `mⱼ` values. Returns `mjmatrix` and `optimizedhistory`.
+- **`makeoutputs`**: Creates three DataFrames:
+  - **`dfrev`**: Revenue rates per UAV per round.
+  - **`dfseq`**: Waypoint sequences and mⱼ values per UAV per round (interleaved columns).
+  - **`dfwp`**: Waypoint coordinates and revenues.
+- **`writeincremental`**: Appends a new sheet (`SimRun{runidx}`) to existing Excel files for revenue, sequences, and waypoints.
 
-**Key methods**:
+***
 
-* **`_prepare_output_dirs()`**
-  Creates
+## **File 2: IRADA.py (Comparison6.py)**
 
-  ```
-  output_dir/
-    revenue/YYYY-MM-DD/simulation_N/
-    sequences/YYYY-MM-DD/simulation_N/
-    waypoints/YYYY-MM-DD/simulation_N/
-  ```
+### **Purpose**
+Implements the **IRADA** (Iterative Resource Allocation with Dynamic Adjustment) benchmark allocator using chronological event-driven scheduling.
 
-  with auto‐incremented `simulation_N`.
+### **Core Functions**
 
-* **`_dump_excel_data(rev_data, sequence_data, rev_dir, sequence_dir)`**
-  Writes one Excel workbook per algorithm+seq/rand, each with `sheet1 … sheetN` for runs.
-
----
-
-Everything under `cfg` defaults to your last‐saved settings. To override:
-
----
-
-## 5. Extending with New Allocators
-
-To integrate, for example, **CBBA** or **CNP**:
-
-1. Implement `class CNPAllocator(TaskAllocator)` with the same `allocate(...) → (rates,history)` signature.
-
-2. In `SimulationRunner.run()`, add to the `strategies` dict:
-
-   ```python
-   strategies = {
-     "ModeGG": lambda: NegotiationAllocator(...),
-     …,
-     "CNP":    lambda: CNPAllocator(self.manager, self.cfg, self.log),
-     "CBBA":   lambda: CBBAAllocator(self.manager, self.cfg, self.log),
-   }
-   ```
-
-3. Enable via toggles `sequential_CNP=True`, `random_CNP=True`, etc., and add `if name.startswith("CNP")…` logic analogous to `ModeXX`.
-
----
-
-## 6. Output Structure
-
+#### **1. IRADAAllocator Class**
+```python
+class IRADAAllocator(TaskAllocator):
+    def __init__(self, manager, config, log, maxrounds=1000)
+    def allocate(self, initialpaths) -> (List[List[float]], List[List[List[int]]])
 ```
-output_dir/
-  revenue/2025-07-29/
-    simulation_1/
-      UAVs5_GRID10_Sequential_ModeGG.xlsx
-      UAVs5_GRID10_Random_ModeGR.xlsx
-      … (one per algorithm+mode)
-  sequences/2025-07-29/
-    simulation_1/
-      UAVs5_GRID10_Sequential_ModeGG_sequences.xlsx
-      … (UAV waypoint sequences)
-  waypoints/2025-07-29/
-    simulation_1/
-      UAVs5_GRID10_waypoints.xlsx
+- **`__init__`**: Initializes with max rounds and `κ` (kappa) coefficient.
+- **`allocate`**: **Event-driven simulation**:
+  1. Initializes each UAV with an "ownership" set (initial waypoints).
+  2. Computes first waypoint picks using restricted pool (ownership).
+  3. Uses a priority queue (heap) to process events chronologically: `(arrival_time, uav_id, waypoint)`.
+  4. When a UAV arrives at a waypoint, it:
+     - Records the trip segment.
+     - Selects the next waypoint (or depot) using `selectnexttargetIRADA`.
+     - Schedules the next arrival event.
+  5. When a UAV returns to depot, it closes a "round" (depot→trip→depot) and computes revenue rate.
+  6. Stops when all UAVs complete `maxrounds` depot returns.
+  7. Logs communication timestamps (`lastcomm`) between UAVs.
+
+***
+
+#### **2. IRADA Score Functions**
+```python
+def computephi(agent, poiidx, t, allagents) -> float
+def computeepsilon(agent, poiidx, t) -> float
+def computeeta(agent, poiidx, t, allagents) -> float
+def selectnexttargetIRADA(agent, t, allagents, includedepot=True, restrictpool=None) -> int
 ```
+- **`computephi(φ)`**: **Information value coefficient**:
+  - `φᵢ(t) = Î(i,t)` (estimated revenue/information at waypoint `i` at time `t`).
+  
+- **`computeepsilon(ε)`**: **Feasibility coefficient**:
+  - `εᵢ,ᵥ(t) = exp(-γ · min(0, Rᵢ,ᵥ(t)))`
+  - Where `Rᵢ,ᵥ(t) = C_remain(t) - dist(qᵥ, pᵢ) - dist(pᵢ, depot) - Cₘₐᵣgᵢₙ`
+  - Penalizes waypoints that violate flight time constraints.
 
-* **Excel outputs**:
+- **`computeeta(η)`**: **Communication coefficient**:
+  - `ηᵢ,ᵥ(t) = Π_{u≠v, i∈ownership_u} [1 - exp(-λ(t - t_comm(v,u)))] · exp(-||pᵢ - c_u(t)||² / ||c_u(t) - c_v(t)||²)`
+  - Encourages coordination: penalizes selecting waypoints owned by recently communicated UAVs and far from the agent's weighted center.
 
-  * In `revenue/…`: per‐algorithm revenue‐per‐round (runs → sheets).
-  * In `sequences/…`: per‐algorithm sequence(s)‐per‐round.
-  * In `waypoints/…`: initial waypoint coords & revenues.
+- **`selectnexttargetIRADA`**: Computes `score = φ · ε · η` for all waypoints (or depot) and selects the highest. If `restrictpool` is provided (first pick), only considers those waypoints.
 
----
-## 📈 Interpreting Results
+***
 
-* **Revenue Excel sheets**: rows = negotiation rounds, columns = UAV revenue rates; final round captures convergence.
+#### **3. ChronoSimulationRunner Class**
+```python
+class ChronoSimulationRunner:
+    def __init__(self, cfg, log)
+    def run(self)
+    def prepareoutputdirs(self) -> (str, str)
+    def dumpexceldata(self, revdata, pathdata, revdir, pathdir)
+```
+- **`__init__`**: Initializes IRADA-specific runner.
+- **`run`**: **Main IRADA execution**:
+  1. Loads Non-Overlap waypoint file (using `findlatestwaypointsresultsroot`) to ensure IRADA uses the same grid as Non-Overlap.
+  2. Runs `IRADAAllocator.allocate()` for `nruns` times.
+  3. Collects per-UAV revenue rates and trip sequences.
+  4. Writes outputs to `BenchmarkingIRADA/revenue/` and `BenchmarkingIRADA/sequences/`.
+- **`prepareoutputdirs`**: Creates dated `simulationN` folders under `BenchmarkingIRADA/`.
 
-## 7. Next Steps & Roadmap
+Let me complete the **Analysis.py** section of the README with detailed function documentation:
 
-* **Add new allocators**: CNP, CBBA, TSDTA, plus any custom heuristics.
-* **Parameter sweeps**: vary `num_uavs`, `grid_spacing`, `zero_prob`, etc.
-* **Comparison scripts**: statistical tests, bar charts, multi‐scenario dashboards.
-* **Real‐world maps**: replace synthetic grid with GIS coordinates.
+***
 
-### IRADA Algorithm
+## **File 3: Analysis.py (Analysis-2.py)**
 
-Apart from the family of drop/pick negotiation strategies (ModeGG, ModeGR, ModeRG, ModeRR),  
-`IRADA_algorithm.py` also runs **IRADA** (Iterative Revenue–Aware Drop/Add) as a benchmark.
+### **Purpose**
+Post-processes simulation outputs to generate visualizations, statistical analyses, and comparative plots across all three game modes (Non-Overlap, Overlap, IRADA).
 
-* IRADA is implemented directly inside `IRADA_algorithm.py` and produces its own
-  `…/Benchmarking/IRADA/revenue/…` and `…/Benchmarking/IRADA/sequences/…` outputs.
-* Its Excel outputs follow the same per-run sheet convention as the other algorithms,
-  so all downstream analysis functions can treat IRADA results uniformly.
-* IRADA runs are controlled by the `irada` toggle in `settings.yaml` (or `--irada true` via CLI).
+### **Core Functions**
 
+***
 
-# `Analysis.py` — Full Reference & Walkthrough
-Below is a complete, annotated walkthrough of **Analysis.py**, covering every flag, function, and code sequence “from top to bottom” so you can see exactly what it’s doing (and where to tweak it). Wherever relevant, I’ve cited the exact lines in the file.
-
----
-
-## 1. Module‐level imports & flags
-
-At the very top we pull in all the libraries we need, then define two Boolean switches that turn on/off different parts of the script:
+#### **1. Configuration & Setup Functions**
 
 ```python
-import os, shutil  
-import pandas as pd  
-import numpy as np  
-import matplotlib.pyplot as plt  
-import matplotlib.animation as animation  
-from sequencelib import sequence  
-from matplotlib.lines import Line2D  
-from matplotlib.animation import PillowWriter  
-from typing import List  
-
-# ─── TOGGLE SECTIONS ON/OFF ───
-GraphGeneration: bool   = False  
-GifGeneration: bool     = False  
+class Config:
+    def __init__(self, data: dict)
+    @classmethod
+    def fromyaml(cls, path='settings.yaml')
+    def override(self, overrides: dict)
 ```
-
-These flags determine which of the following functions actually get defined and (in the `__main__` block) which get run .
-
----
-
-## 2. Graph‐generation functions (`GraphGeneration=True`)
-
-When `GraphGeneration` is `True`, three functions are defined:
-
-### 2.1 `analyze_revenue_excels_with_shade(excel_dir)`
-
-Reads every `.xlsx` in `excel_dir`, each sheet = one run:
-
-1. **Pads** all runs to the same length (repeat‐last‐value).
-2. **Stacks** them into a 3-D array.
-3. Computes per‐round **mean** & **stddev** for each UAV *and* normalized total.
-4. Makes one combined plot: each UAV’s mean line with shaded ±1 std, plus a bold dashed total‐line with its shading.
-5. Saves to `excel_dir/analysis_plots/<basename>_mean_std.png`.
+- **`__init__`**: Loads analysis configuration including paths (`resultsdir`, `visualizationdir`, `iradabenchmarkingdir`), simulation parameters, and master switches (`GraphGeneration`, `GifGeneration`).
+- **`fromyaml`**: Factory method to create Config from `settings.yaml`.
+- **`override`**: Applies CLI overrides for flexible parameter tuning.
 
 ```python
-def analyze_revenue_excels_with_shade(excel_dir):
-    """
-    For each .xlsx in excel_dir:
-      • read all sheets → DataFrames
-      • pad to same # of rows
-      • compute mean±std per-UAV & TOT_norm
-      • plot mean lines + shaded std bands
-      • save under excel_dir/analysis_plots/
-    """
-    plots_dir = os.sequence.join(excel_dir, "analysis_plots")
-    os.makedirs(plots_dir, exist_ok=True)
-    …
-    plt.savefig(out_sequence)
+def setplotstyle()
 ```
+- **Purpose**: Configures global matplotlib styling (font family, sizes) for publication-ready plots.
+- **Sets**: Font family (Times New Roman), title size (18), axis labels (24), tick labels (24), legend (24).
 
+***
 
-
----
-
-### 2.2 `analyze_modes_and_club_tot(excel_dir)`
-
-Aggregates *across* modes (e.g. “Random\_ModeGG”, “Sequential\_ModeRG”):
-
-1. For each revenue‐Excel, pads & computes per‐round mean/std as above.
-2. Saves a `<basename>_stats.xlsx` containing columns
-
-   * `mean_UAVs_avg`, `std_UAVs_avg`
-   * `mean_TOT_norm`, `std_TOT_norm`
-3. Finally, plots all modes’ **mean** normalized‐totals on one comparison chart → `combined_TOT_norm_comparison.png`.
+#### **2. Path & File Management Functions**
 
 ```python
-def analyze_modes_and_club_tot(excel_dir):
-    # read each *.xlsx → pad → compute stats → save *_stats.xlsx
-    # then combine TOT_norm means across modes into one plot
+def findlatestsimulation(root: Path) -> Path
 ```
-
-
-
----
-
-### 2.3 `analyze_revenue_excels_graphs(excel_dir)`
-
-Produces **four** sets of plots for *each* revenue‐Excel:
-
-1. **Per‐UAV** mean±std shading plot.
-2. **Total** (sum over UAVs) mean±std shading plot.
-3. **Consolidated**: all UAV mean‐curves + mean(total)/n\_uavs curve.
-   Saved under `excel_dir/analysis_plots/<basename>/…`.
-4. **Boxplots** all Total Revenue Rates per Simulation Round per Algorithm.
-   Saved under `excel_dir/boxplots/…`.
-   
+- **Purpose**: Finds the most recent simulation folder under a given root directory.
+- **Logic**: 
+  1. Sorts date folders (YYYY-MM-DD) under root.
+  2. Finds highest `simulationN` folder under the latest date.
+- **Returns**: Path to `Results/{mode}/{type}/YYYY-MM-DD/simulationN/`.
 
 ```python
-def analyze_revenue_excels_graphs(excel_dir):
-    """
-    For each *.xlsx:
-     1) One UAV mean±std plot
-     2) One total mean±std plot
-     3) One consolidated plot (UAV means + TOT/n_uavs)
-    """
-    plots_root = os.sequence.join(excel_dir, "analysis_plots")
-    os.makedirs(plots_root, exist_ok=True)
-    …
-    plt.savefig(os.sequence.join(out_dir, "Consolidated_mean.png"))
+def modefrompath(p: Path) -> str
 ```
-
-
-
----
-
-### 2.4 `plot_consolidated_total_revenue(excel_dir, output_sequence=None)`
-
-Reads *all* `.xlsx` in a folder, for each:
-
-* Pads runs
-* Computes mean *total* (sum of UAV columns) per round
-* Stores in a dict `{basename: mean_series}`
-  Finally plots every algorithm’s mean‐total curve on one chart:
+- **Purpose**: Extracts game mode from path components.
+- **Returns**: `"NonOverlap"`, `"Overlap"`, `"IRADA"`, or `"Other"`.
 
 ```python
-def plot_consolidated_total_revenue(excel_dir, output_sequence=None):
-    # … compute consolidated[basename] = mean_tot_series
-    plt.plot(rounds, mean_tot, label=algo)
-    plt.savefig(output_sequence or "<excel_dir>/combined_total_revenue.png")
+def labelfromrevenuefile(f: Path) -> str
 ```
-
-
-
----
-
-### 2.5 `organize_and_boxplot(sim_rev_dir: str)`
-
-**Reorganizes** all `.xlsx` in `sim_rev_dir` into two subfolders:
-
-   * `Sequential/`
-   * `Random/`
-     (based on the 3rd underscore‐token in the filename)
-In each mode‐folder, reads each algorithm’s `.xlsx`, computes **final** total revenue per run (`sum of all UAV columns in last row`), collects them into a list, and makes **one** boxplot of “final totals per algorithm”:
-
-   ```python
-   fig, ax = plt.subplots(figsize=(1.5*len(labels), 5))
-   ax.boxplot(all_data, tick_labels=labels, patch_artist=True)
-   ax.set_title(f"{mode} Final Totals per Algorithm")
-   fig.savefig(sim_rev_dir/boxplots/{mode}/final_totals_box.png)
-   ```
-
-
-
----
-
-## 3. GIF‐generation functions (`GifGeneration=True`)
-
-When `GifGeneration` is `True`, we define:
-
-### 3.1 `subscript(n: int) -> str`
-
-Helper to turn digits `0–9` into Unicode subscripts (₀₁₂…₉) for nicely formatted labels.
-
-### 3.2 `generate_gifs_from_sequences(sim_sequences_dir)`
-
-For each `<base>_sequences.xlsx` under `sim_sequences_dir`:
-
-1. Finds the matching revenue‐Excel and waypoint‐Excel in the parallel `…/revenue/…` and `…/waypoints/…` trees.
-2. For each run‐sheet:
-
-   * Reads per‐run waypoint coordinates **and revenues** (so point‐colors reflect that run’s zeros vs nonzeros).
-   * Computes grid‐spacing `d` from the first two waypoints.
-   * Builds a **scalable** figure size based on the grid extents + a sidebar for text.
-   * Pre‐draws every waypoint as black (rev > 0) or gray (rev = 0), plus the depot at (0,0).
-   * Defines an `update(frame)` that:
-
-     * Clears only the *dynamic* artists (previous sequences + sidebar text).
-     * Re‐draws each UAV’s tour in its assigned color.
-     * If `m_j > 1`, draws a dashed “jump” line from last→first.
-     * In the sidebar (using LaTeX–style `$m_{j}$`, `$Z_{j}$`), prints for UAV₀…UAVₙ:
-
-       ```
-       m₀=…, Z₀=…
-       m₁=…, Z₁=…
-       …
-       Z=…      ← total rev
-       ```
-   * Animates and writes out a GIF via `PillowWriter` → saved in `…/gifs/<mode>/<base>_<run>.gif`.
+- **Purpose**: Creates concise algorithm labels from revenue workbook filenames.
+- **Examples**:
+  - `UAVs2GRID5ModeGGSequential.xlsx` → `"ModeGGSequential"`
+  - `UAVs2GRID5IRADA.xlsx` → `"IRADA"`
 
 ```python
-def generate_gifs_from_sequences(sim_sequences_dir):
-    # … load seq Excel, rev Excel, waypoints Excel
-    # … compute d, figsize, draw static grid & depot
-    def update(frame):
-        # remove previous dynamic layers
-        # plot UAV sequences, jump lines if m>1
-        # fig.text(...) sidebar with m_j, Z_j, total Z
-    ani = FuncAnimation(fig, update, …)
-    ani.save(..., writer=PillowWriter(fps=1))
+def shortalgolabel(gamelabel: str, algolabel: str) -> str
 ```
+- **Purpose**: Maps verbose labels to compact taxonomy codes for plots.
+- **Examples**:
+  - `("NonOverlap", "ModeGGSequential")` → `"NSGG"`
+  - `("Overlap", "ModeGRRandom")` → `"ORGR"`
+  - `("IRADA", "IRADA")` → `"IRADA"`
+- **Format**: `{Game}{Order}{Mode}` where:
+  - Game: N (NonOverlap), O (Overlap), IRADA
+  - Order: S (Sequential), R (Random)
+  - Mode: GG, GR, RG, RR
 
----
+```python
+def visplotsrootforsim(visroot: Path, mode: str, revsimpath: Path) -> Path
+def visgifsrootforsim(visroot: Path, mode: str, seqsimpath: Path) -> Path
+def viscomparisonsroot(visroot: Path, nonrevsim: Path) -> Path
+```
+- **Purpose**: Constructs output paths for visualizations.
+- **Returns**: 
+  - `Visualizations/{mode}/plots/YYYY-MM-DD/simulationN/`
+  - `Visualizations/{mode}/gifs/YYYY-MM-DD/simulationN/`
+  - `Visualizations/Comparisons/YYYY-MM-DD/simulationN/`
 
-## 4. `if __name__ == "__main__":`
+***
 
-Finally, depending on the three flags, the script will run:
+#### **3. Revenue Analysis Functions**
+
+```python
+def analyzerevenue_excelsgraphs(exceldir: str, outroot: str = None)
+```
+- **Purpose**: **Primary revenue analysis function** - generates three types of plots for each revenue workbook:
+  
+  **Plot 1: Per-UAV Mean±Std Revenue Rate**
+  - One plot per UAV showing mean revenue rate ± standard deviation across runs.
+  - X-axis: Negotiation round
+  - Y-axis: Revenue rate
+  - Shaded region: Standard deviation band
+  - Output: `{UAVk}_meanstd.png`
+
+  **Plot 2: Total Revenue Rate Mean±Std**
+  - Aggregated total revenue rate across all UAVs.
+  - Shows system-wide performance per round.
+  - Output: `Total_meanstd.png`
+
+  **Plot 3: Consolidated Mean Plot**
+  - All UAV means + system mean on one plot.
+  - Legend positioned outside (right) with dynamic figure width.
+  - Output: `Consolidated_mean.png`
+
+- **Methodology**:
+  1. Reads all sheets (SimRun1, SimRun2, ...) from each `.xlsx` file.
+  2. Extracts UAV columns and pads to max rounds using forward-fill.
+  3. Stacks across runs: `arr[run, round, uav]`.
+  4. Computes `mean(axis=0)` and `std(axis=0, ddof=1)` across runs.
+
+***
+
+```python
+def plotconsolidatedtotalrevenue(exceldir: str, outputpath: str = None)
+```
+- **Purpose**: **Cross-algorithm comparison** - plots mean total revenue rate for all algorithms on a single figure.
+- **Features**:
+  - Dynamic figure width based on number of algorithms (`basew + extra_per_algo × (nalgos - 3)`).
+  - Uses short taxonomy labels (NSGG, ORGR, IRADA).
+  - Legend outside plot area (right side).
+- **Output**: `combined_total_revenue_rate.png` in `Visualizations/Comparisons/`.
+
+***
+
+#### **4. Boxplot Functions**
+
+```python
+def boxplotfinaltotalswitirada(revdirs: List[str/Path], outpng: str = None)
+```
+- **Purpose**: Creates **two separate boxplots** of final total revenue per run:
+  
+  **Boxplot 1: NonOverlap vs IRADA**
+  - Includes all NonOverlap strategies + IRADA.
+  - Excludes Overlap data.
+  - Sorts so IRADA appears last (visual separation).
+  - Output: `finaltotal_nonoverlapvsirada.png`
+
+  **Boxplot 2: Overlap Only**
+  - Includes only Overlap strategies.
+  - Separate comparison to isolate Overlap performance.
+  - Output: `finaltotal_overlaponly.png`
+
+- **Methodology**:
+  1. Reads all revenue workbooks from provided directories.
+  2. Extracts final row (last negotiation round) from each sheet.
+  3. Sums UAV columns to get total revenue.
+  4. Groups by algorithm label.
+  5. Uses orange median lines, grid for readability.
+
+***
+
+```python
+def boxplotuavcontributionall(revsim: str/Path, outpng: str = None)
+```
+- **Purpose**: Analyzes **individual UAV contributions** to total revenue.
+- **Generates**: One boxplot per algorithm showing final revenue distribution across UAVs.
+- **Use Case**: Identifies workload balance - are some UAVs consistently underperforming?
+- **Output**: Saved to `{revsim}/boxplots/uavcontribution/` with one plot per algorithm.
+
+***
+
+```python
+def boxplotflighttimeleft(seqroots: List[str/Path], cfg: Config, outpng: str, nonoverlapwpsim: str/Path = None)
+```
+- **Purpose**: Computes **remaining flight time** for the final tour of each UAV in each run.
+- **Methodology**:
+  1. Parses UAV sequences from the last negotiation round.
+  2. For **IRADA**: Computes single depot→tour→depot distance (requires NonOverlap waypoints file).
+  3. For **Non-Overlap/Overlap**: Uses `mⱼ` values from sequences workbook.
+  4. Calculates: `remaining = maxflighttime - (distance / speed)`.
+  5. Plots boxplot showing feasibility margin.
+- **Output**: `flighttimeleft_allalgorithms.png` in `Visualizations/Comparisons/`.
+- **Insight**: Negative values indicate infeasible tours (constraint violations).
+
+***
+
+#### **5. Simulation Picking & Overrides**
+
+```python
+def picksim(rootseq: Path, rootrev: Path, manualdate: str = None, manualsim: str = None) -> (Path, Path)
+```
+- **Purpose**: Selects which simulation to analyze.
+- **Logic**:
+  - If `manualdate` and `manualsim` are provided (e.g., from YAML overrides), uses those.
+  - Otherwise, finds the latest simulation using `findlatestsimulation()`.
+- **Returns**: Tuple of `(sequences_sim_path, revenue_sim_path)`.
+
+***
+
+#### **6. Main Execution Block**
 
 ```python
 if __name__ == "__main__":
-    if GraphGeneration:
-        analyze_revenue_excels_graphs("…/revenue/...")  
-        plot_consolidated_total_revenue("…/revenue/...")  
-        print("Consolidated total revenue plot saved.")
-        organize_and_boxplot("<absolute>/output…/simulation_X")  
-    if GifGeneration:
-        generate_gifs_from_sequences("…/sequences/.../simulation_X")  
-        print("All plots saved!")
+    # 1. Load config from settings.yaml + CLI overrides
+    # 2. Set plot style
+    # 3. Pick simulations (NonOverlap, Overlap, IRADA)
+    # 4. Generate per-algorithm graphs (if GraphGeneration enabled)
+    # 5. Create consolidated comparisons
+    # 6. Generate boxplots (final totals, UAV contributions, flight time)
 ```
 
----
+**Execution Flow**:
+1. **Config Loading**: Loads `settings.yaml`, applies CLI overrides (`--numuavs`, `--gridwidth`, etc.).
+2. **Simulation Selection**:
+   - NonOverlap: Uses manual overrides (`NONDATE`, `NONSIM`) or finds latest.
+   - Overlap: Uses manual overrides (`OVERDATE`, `OVERSIM`) or finds latest.
+   - IRADA: Uses manual overrides (`IRADADATE`, `IRADASIM`) or finds latest.
+3. **Graph Generation** (if `GraphGeneration=True`):
+   - Calls `analyzerevenue_excelsgraphs()` for each mode.
+   - Generates per-UAV, total, and consolidated plots.
+4. **Consolidated Comparisons**:
+   - Calls `plotconsolidatedtotalrevenue()` for each mode.
+   - Creates cross-algorithm comparison plots.
+5. **Boxplot Generation**:
+   - Final total revenue comparisons (NonOverlap vs IRADA, Overlap only).
+   - UAV contribution analysis per mode.
+   - Flight time left analysis across all modes.
 
-## 5. Specialized IRADA Analysis
+***
 
-`Analysis.py` produces **three additional boxplots** that incorporate IRADA side-by-side
-with the other algorithms:
+#### **7. Helper Functions**
 
-1. **Boxplot of percentage of flight-time remaining per tour**  
-   (`boxplot_flight_time_left`)  
-   Each UAV’s tour distance is divided by speed → used flight time.  
-   Remaining time is normalized by `max_flight_time` → percentage left.  
-   Plotted as a distribution across all runs and algorithms (incl. IRADA).
-
-2. **Boxplot of total revenue rate including IRADA**  
-   (`organize_and_boxplot`)  
-   Collects final per-run totals for every algorithm, adds IRADA totals from
-   `Benchmarking/IRADA/revenue`, and renders a combined boxplot.
-
-3. **Per-UAV contribution boxplots**  
-   For each algorithm (and IRADA), the percentage contribution of each UAV
-   to the **total revenue rate** is computed and box-plotted.  
-   This reveals fairness or skew — e.g., if UAV₀ dominates vs. balanced load.
-
-All of these plots are saved under the relevant simulation folder, e.g.:
-
+```python
+def algolabelfromseqfile(seqfile: Path) -> str
 ```
-Results/revenue/YYYY-MM-DD/simulation_X/boxplots_with_irada/
-├─ final_totals_all.png
-├─ flight_time_left.png
-├─ Random_ModeGG/uav_contribution.png
-├─ Sequential_ModeGR/uav_contribution.png
-└─ IRADA/uav_contribution.png
+- **Purpose**: Infers algorithm label from sequence filename.
+- **Examples**:
+  - `UAVs2GRID5_1003_ModeGG_Random_sequences.xlsx` → `"ModeGGRandom"`
+  - `UAVs2GRID5IRADA_sequences.xlsx` → `"IRADA"`
+
+```python
+def getmaxroundsfromalgorithms(outputdir: str, datestr: str, simdir: str) -> int
 ```
+- **Purpose**: Scans revenue and sequence workbooks to determine the maximum number of negotiation rounds across all runs/algorithms.
+- **Use Case**: Ensures consistent x-axis limits when comparing algorithms with different convergence times.
 
-
----
-
-### Outputs
-
+```python
+def loadwaypointrevenues(pathoroutputdir, datestr=None, simdir=None, cfg=None, runidx=1) -> (List[int], List[Tuple])
 ```
-analysis_plots/
-   combined_total_revenue.png
-   boxplots_with_irada/
-      final_totals_all.png         # revenue per algorithm (incl. IRADA)
-      flight_time_left.png         # flight-time left %
-      <Algo>/uav_contribution.png  # UAV contribution per algo
-```
+- **Purpose**: **Flexible waypoint loader** for IRADA analysis.
+- **Two modes**:
+  - **Case A (direct path)**: Load from exact path (e.g., `UAVs2GRID5waypoints.xlsx`).
+  - **Case B (legacy)**: Construct path from `outputdir`, `datestr`, `simdir`, `cfg`.
+- **Returns**: `(revenues, coords)` for a specific run (sheet `SimRun{runidx}`).
 
----
+***
 
-# 🔧 How to Run (with `Simulate.sh`)
+### **Key Analysis Outputs**
 
-1. Upgrade to **Python 3.10+** so you can keep the new style (for environments running python <3.10).
+| **Output Type** | **Files Generated** | **Purpose** |
+|-----------------|-------------------|-------------|
+| **Per-Algorithm Revenue** | `{UAVk}_meanstd.png`, `Total_meanstd.png`, `Consolidated_mean.png` | Tracks revenue convergence per UAV and system-wide |
+| **Cross-Algorithm Comparison** | `combined_total_revenue_rate.png` | Compares all strategies (NSGG, ORGR, IRADA, etc.) |
+| **Final Total Boxplots** | `finaltotal_nonoverlapvsirada.png`, `finaltotal_overlaponly.png` | Statistical comparison of final performance |
+| **UAV Contribution Boxplots** | `uavcontribution/*.png` | Analyzes workload distribution across UAVs |
+| **Flight Time Left Boxplot** | `flighttimeleft_allalgorithms.png` | Validates constraint satisfaction |
+
+***
+
+### **Usage Example**
 
 ```bash
-sudo apt-get update
-sudo apt-get install python3.10 python3.10-venv python3.10-dev
-```
-2. (Suggested) Run `Simulate.sh` in a virtual environment. Sample virtual environment (with Python 3.10) creation as follows:
+# Run analysis with default settings
+python Analysis.py
 
-```bash
-python3.10 -m venv venv/uav
-source venv/uav/bin/activate
-pip install -r requirements.txt
-```
+# Override specific simulation
+python Analysis.py --numuavs 3 --gridwidth 10 --nruns 50
 
----
-
-All runs are orchestrated through **Simulate.sh**.
-
-## 🚀 Quick Start
-
-```bash
-chmod +x Simulate.sh
-./Simulate.sh
+# Use manual simulation selection (edit settings.yaml)
+# NONDATE: "2025-12-15"
+# NONSIM: "simulation3"
+python Analysis.py
 ```
 
-This will run:
+***
 
-1. **MPG_algorithms.py** → prepares waypoints & settings.
-2. **IRADA_algorithm.py** → runs all algorithms, outputs Excel.
-3. **Analysis.py** → generates plots & boxplots.
+This completes the comprehensive function documentation for all three core files.
 
-Logs are stored under `run_logs/`.
 
----
+# Benchmarking of Multi‑UAV Flight sequence Calculation
 
-## ⚙️ Overriding Parameters
+## 📂 Code Structure
 
-Edit the `OVERRIDES` array inside `Simulate.sh`:
-
-```bash
-declare -a OVERRIDES=(
-  "--num_uavs 10 --speed 12 --max_flight_time 1900 --n_runs 3"
-  "--grid_width 5 --grid_height 5 --grid_spacing 7 --speed 3 --n_runs 3"
-)
 ```
-
-* Each string = one run.
-* Flags correspond to `Config` entries or `settings.yaml`.
-
-Examples:
-
-```bash
-# Run once with 12 UAVs, 15×15 grid, 2000 flight-time
-"--num_uavs 12 --grid_width 15 --grid_height 15 --max_flight_time 2000 --n_runs 1"
-
-# Enable Sequential GG only, disable Random RR
-"--sequential_GG true --random_RR false"
+├─ MPG_algorithms.py   # Simulation runner with algorithms, Excel, log files
+├─ IRADA_algorithm.py   # IRADA with algorithms, Excel, log files
+├─ Analysis.py        # Post‑processing: plots, boxplots, animations from Excel
+├─ output5x5_benchmark/
+│   ├─ revenue/...
+│   ├─ sequences/...
+│   ├─ waypoints/...
+│   ├─ gifs/, plots/, excels/
+└─ README.md          # (this file)
 ```
-
----
 
 ## 📂 Outputs
 
