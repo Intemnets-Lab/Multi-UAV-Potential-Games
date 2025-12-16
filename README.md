@@ -246,12 +246,12 @@ Check the following directories:
 Results/
 ├── NonOverlap/
 │   ├── revenue/2025-12-16/simulation1/
-│   │   ├── UAVs2GRID5ModeGGSequential.xlsx
-│   │   └── UAVs2GRID5ModeGRSequential.xlsx
+│   │   ├── UAVs2_GRID5_ModeGG_Sequential.xlsx
+│   │   └── UAVs2_GRID5_ModeGR_Sequential.xlsx
 │   ├── sequences/2025-12-16/simulation1/
-│   │   └── UAVs2GRID5_1800_20_ModeGGSequential_sequences.xlsx
+│   │   └── UAVs2_GRID5_1800_20_ModeGG_Sequential_sequences.xlsx
 │   └── waypoints/2025-12-16/simulation1/
-│       └── UAVs2GRID5waypoints.xlsx
+│       └── UAVs2_GRID5_waypoints.xlsx
 ├── Overlap/
 │   └── (same structure)
 └── BenchmarkingIRADA/
