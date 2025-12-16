@@ -65,7 +65,7 @@ imageio>=2.9.0
 ### **Step 1: Clone the Repository**
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Intemnets-Lab/Multi-UAV-Potential-Games/tree/main
 cd <repository-directory>
 ```
 
