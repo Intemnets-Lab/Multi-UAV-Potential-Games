@@ -1,0 +1,45 @@
+# settings.yaml
+project:
+  results_dir: Results
+  IRADA_benchmarking_dir: Benchmarking/IRADA
+  visualization_dir: Visualizations
+
+simulation:
+  seed: null        # or a number
+  n_runs: 100
+  enable_logging: false
+
+grid:
+  width: 13
+  height: 13
+  spacing: 92.608
+  zero_prob: 0.2
+  lambda: 0.1
+
+uav:
+  num_uavs: 5
+  speed: 16
+  max_flight_time: 1920
+
+revenue:
+  random: true
+  fixed_value: 30
+  min: 60
+  max: 600
+
+overlap:
+  clone_threshold: 300
+  clone_assignment: "random"           # "same" | "random" | "balanced"
+
+
+algorithms:
+  # toggles for 8 algos + IRADA
+  sequential_GG:  true
+  sequential_GR:  true
+  sequential_RG:  true
+  sequential_RR:  true
+  random_GG:      true
+  random_GR:      true
+  random_RG:      true
+  random_RR:      true
+  irada:          true
